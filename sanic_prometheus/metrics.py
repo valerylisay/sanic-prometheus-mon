@@ -1,4 +1,5 @@
 import asyncio
+import http
 import time
 import typing as tp
 
@@ -54,12 +55,27 @@ def before_request_handler(request):
     _set_start_time_compat(request, time.perf_counter())
 
 
+def _convert_status_to_int(
+        response_status: tp.Union[int, str, http.HTTPStatus]
+) -> int:
+    """
+    Converts http.HTTPStatus, str, int to int value.
+
+    If error returns 0.
+    """
+    try:
+        response_status = int(response_status)
+    except (TypeError, ValueError):
+        response_status = 0
+
+    return response_status
+
+
 def after_request_handler(request, response, get_endpoint_fn):
     # Note, that some handlers can ignore response logic,
     # for example, websocket handler
     response_status = response.status if response else 200
-    if not isinstance(response_status, int):
-        response_status = int(response_status)  # HTTPStatus -> int
+    response_status = _convert_status_to_int(response_status)
 
     endpoint = get_endpoint_fn(request)
 
